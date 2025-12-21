@@ -1,0 +1,13 @@
+{
+  "name": "alina/lab4",
+  "description": "SQLite",
+  "autoload": {
+    "psr-4": {
+      "App\\Blog\\": "src/Blog/"
+    }
+  },
+  "require": {
+    "fakerphp/faker": "^1.23",
+    "ramsey/uuid": "^4.7"
+  }
+}
