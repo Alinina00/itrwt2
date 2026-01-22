@@ -8,6 +8,7 @@ use src\Blog\Person\Name;
 use src\Blog\Post;
 use src\Blog\Comment;
 use src\Blog\UUID;
+use src\Blog\Repositories\UsersRepository\SqliteUserRepository
 
 require_once __DIR__ . "/vendor/autoload.php";
 
