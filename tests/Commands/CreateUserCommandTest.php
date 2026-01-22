@@ -12,10 +12,10 @@ use src\Blog\Exceptions\CommandException;
 use src\Blog\Exceptions\UserNotFoundException;
 
 use src\Blog\Repositories\UsersRepository\UserRepositoryInterface;
-use src\Blog\Repositories\UsersRepository\DummyUserRepository;
 
 use src\Blog\User;
 use src\Blog\UUID;
+use src\Blog\Person\Name;
 
 class CreateUserCommandTest extends TestCase
 {
@@ -24,7 +24,6 @@ class CreateUserCommandTest extends TestCase
         return new class implements UserRepositoryInterface
         {
             protected bool $called = false;
-
 
             public function save(User $user): void
             {
@@ -36,21 +35,44 @@ class CreateUserCommandTest extends TestCase
                 throw new UserNotFoundException("Not found");
             }
 
-            public function getByUserName(string $username): User
+            public function getByUsername(string $username): User
             {
                 throw new UserNotFoundException("Not found");
             }
+
+            public function delete(UUID $uuid): void {}
         };
     }
 
     public function testItThrowsAnExceptionWhenUserAlreadyExists(): void
     {
-        $command = new CreateUserCommand(new DummyUserRepository());
+        $usersRepository = new class implements UserRepositoryInterface {
+
+            public function save(User $user): void {}
+
+            public function get(UUID $uuid): User
+            {
+                throw new UserNotFoundException("User not found: $uuid");
+            }
+
+            public function getByUsername(string $username): User
+            {
+                return new User(UUID::random(), $username, new Name("First", "Last"));
+            }
+
+            public function delete(UUID $uuid): void {}
+        };
+
+        $command = new CreateUserCommand($usersRepository);
 
         $this->expectException(CommandException::class);
         $this->expectExceptionMessage("User already exists: Ivan");
 
-        $command->handle(new Arguments(["username" => "Ivan"]));
+        $command->handle(new Arguments([
+            "username" => "Ivan",
+            "first_name" => "test",
+            "last_name" => "test"
+        ]));
     }
 
     public function testItRequiresFirstName(): void
@@ -88,7 +110,7 @@ class CreateUserCommandTest extends TestCase
                 throw new UserNotFoundException("User not found: $uuid");
             }
 
-            public function getByUserName(string $username): User
+            public function getByUsername(string $username): User
             {
                 throw new UserNotFoundException("User not found: $username");
             }
@@ -97,6 +119,8 @@ class CreateUserCommandTest extends TestCase
             {
                 return $this->called;
             }
+
+            public function delete(UUID $uuid): void {}
         };
 
         $command = new CreateUserCommand($usersRepository);

@@ -36,28 +36,28 @@ readonly class SqliteUserRepository implements UserRepositoryInterface
     {
         $statement = $this->connection->prepare("SELECT * FROM users WHERE uuid = :uuid");
         $statement->execute([
-            ":uuid"=>$uuid,
+            ":uuid" => (string)$uuid,
         ]);
 
-        return $this->getUser($statement, $uuid);
+        return $this->getUserFromStatement($statement, $uuid);
     }
 
     public function getByUsername(string $username): User
     {
         $statement = $this->connection->prepare("SELECT * FROM users WHERE username = :username");
         $statement->execute([
-            ":username"=>$username,
+            ":username" => $username,
         ]);
 
-        return $this->getUser($statement, $username);
+        return $this->getUserFromStatement($statement, $username);
     }
 
-    public function getUser(PDOStatement $statement, string $userPayload): User
+    private function getUserFromStatement(PDOStatement $statement, string $identifier): User
     {
         $result = $statement->fetch(PDO::FETCH_ASSOC);
 
         if ($result === false) {
-            throw new UserNotFoundException("User not found: $userPayload");
+            throw new UserNotFoundException("User not found: $identifier");
         }
 
         return new User(
@@ -65,5 +65,17 @@ readonly class SqliteUserRepository implements UserRepositoryInterface
             $result["username"],
             new Name($result["first_name"], $result["last_name"])
         );
+    }
+
+    public function delete(UUID $uuid): void
+    {
+        $statement = $this->connection->prepare("DELETE FROM users WHERE uuid = :uuid");
+        $statement->execute([
+            ':uuid' => (string)$uuid
+        ]);
+
+        if ($statement->rowCount() === 0) {
+            throw new UserNotFoundException("User not found: $uuid");
+        }
     }
 }

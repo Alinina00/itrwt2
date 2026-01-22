@@ -3,7 +3,6 @@
 namespace src\Blog\Repositories\CommentsRepository;
 
 use PDO;
-use PDOStatement;
 
 use src\Blog\Comment;
 use src\Blog\Exceptions\CommentNotFoundException;
@@ -35,45 +34,32 @@ readonly class SqliteCommentRepository implements CommentRepositoryInterface
     {
         $statement = $this->connection->prepare("SELECT * FROM comments WHERE uuid = :uuid");
         $statement->execute([
-            ":uuid"=>$uuid,
+            ':uuid' => (string)$uuid,
         ]);
 
-        return $this->getComment($statement, $uuid);
-    }
-
-    public function getByPostId(UUID $uuid): Comment
-    {
-        $statement = $this->connection->prepare("SELECT * FROM comments WHERE post_uuid = :post_uuid");
-        $statement->execute([
-            ":post_uuid"=>$uuid,
-        ]);
-
-        return $this->getComment($statement, $uuid);
-    }
-
-    public function getByAuthorId(UUID $uuid): Comment
-    {
-        $statement = $this->connection->prepare("SELECT * FROM comments WHERE author_uuid = :author_uuid");
-        $statement->execute([
-            ":author_uuid"=>$uuid,
-        ]);
-
-        return $this->getComment($statement, $uuid);
-    }
-
-    public function getComment(PDOStatement $statement, string $commentPayload): Comment
-    {
         $result = $statement->fetch(PDO::FETCH_ASSOC);
 
         if ($result === false) {
-            throw new CommentNotFoundException("Comment not found: $commentPayload");
+            throw new CommentNotFoundException("Comment not found: $uuid");
         }
 
         return new Comment(
-            new UUID($result["uuid"]),
-            $result["post_uuid"],
-            $result["author_uuid"],
-            $result["text"]
+            new UUID($result['uuid']),
+            new UUID($result['post_uuid']),
+            new UUID($result['author_uuid']),
+            $result['text']
         );
+    }
+
+    public function delete(UUID $uuid): void
+    {
+        $statement = $this->connection->prepare("DELETE FROM comments WHERE uuid = :uuid");
+        $statement->execute([
+            ':uuid' => (string)$uuid
+        ]);
+
+        if ($statement->rowCount() === 0) {
+            throw new CommentNotFoundException("Comment not found: $uuid");
+        }
     }
 }
